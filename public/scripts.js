@@ -12,7 +12,16 @@ function sendChatMessage() {
     var userChatMessage = document.getElementById('chatbot-user-input').value;
     console.log(userChatMessage);
     document.getElementById('chatbot-user-input').value = '';
-    addMessageToChatbox(userChatMessage);
+    addMessageToChatbox(userChatMessage); 
+
+    const response = fetch('/get-question',{
+        method: 'POST',
+        headers:{
+            'Content-Type':'application/json'
+        },
+        body:JSON.stringify({question:userChatMessage})
+    });
+    
 }
 
 function addMessageToChatbox(message){
