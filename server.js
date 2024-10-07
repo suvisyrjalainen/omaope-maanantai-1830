@@ -8,10 +8,10 @@ app.use(bodyParser.json());
 app.use(express.static('public'));
 
 app.post('/get-question', (req,res) =>{
-  const question = req.body.question;
-  console.log(question);
-  if(question){
-    res.json({question: `Tämä on serverin palauttama viesti frontille: ${question}`});
+  const userMessage = req.body.question;
+  console.log(userMessage);
+  if(userMessage){
+    res.json({question: `Tämä on serverin palauttama viesti frontille: ${userMessage}`});
   }else{
     res.status(400).json({error:'Kysymys puuttuu.'});
   }
