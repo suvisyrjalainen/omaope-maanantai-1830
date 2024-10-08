@@ -11,7 +11,7 @@ app.post('/get-question', (req,res) =>{
   const userMessage = req.body.question;
   console.log(userMessage);
   if(userMessage){
-    res.json({question: `Tämä on serverin palauttama viesti frontille: ${userMessage}`});
+    res.json({question: `Tämä on serverin palauttama viesti frontille: ${serMessage}`});
   }else{
     res.status(400).json({error:'Kysymys puuttuu.'});
   }
