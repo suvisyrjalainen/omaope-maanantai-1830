@@ -2,6 +2,8 @@ import express from 'express';
 import bodyParser from 'body-parser';
 import dotenv from 'dotenv';
 import multer from 'multer';
+import vision from '@google-cloud/vision';
+import fs from 'fs';
 
 const app = express();
 const port = 3000;
@@ -12,6 +14,13 @@ app.use(express.static('public'));
 dotenv.config();
 
 const upload = multer({ dest: 'uploads/' });
+
+const client = new vision.ImageAnnotatorClient({
+  keyFilename: 'omaope-vision.json' 
+});
+
+let koealueTekstina = '';
+let context = [];
 
 app.post('/chat', async (req,res) =>{
   const userMessage = req.body.question;
@@ -44,7 +53,7 @@ app.post('/chat', async (req,res) =>{
   
 });
 
-app.post('/upload-images', upload.array('images', 10), (req,res) =>{
+app.post('/upload-images', upload.array('images', 10), async (req,res) =>{
   const files = req.files;
   console.log("kuvat vastaanotettu")
   console.log(files);
@@ -53,8 +62,59 @@ app.post('/upload-images', upload.array('images', 10), (req,res) =>{
     return res.status(400).json({ error: 'Kuvia ei ole lisätty/löydy' });
   }
   else{
-    res.json({message: 'Kuvat vastaanotettu'});
+    //Odotetaan, että kaikki kuvat on käsitelty OCR:n avulla, eli jokaisen kuvan teksti tunnistetaan.
+    const texts = await Promise.all(files.map(async file => {
+      // suoritetaan, että saadaan tiedostopolku kuvalle, jonka OCR-tunnistus halutaan suorittaa. 
+      const imagePath = file.path;
+      console.log(imagePath);
+      // kutsu GCV API:lle, joka suorittaa OCR:n annetulle kuvalle
+      const [result] = await client.textDetection(imagePath);
+      //ottaa result-muuttujasta kaikki tekstintunnistusmerkinnät (textAnnotations), jotka sisältävät kaikki kuvasta tunnistetut tekstialueet.
+      const detections = result.textAnnotations;
+      console.log('OCR Detected Text:', detections);
+      // poistaa tiedoston, joka on luotu kuvan lähettämisen yhteydessä
+      fs.unlinkSync(imagePath); 
+      // Koodi tarkistaa, löytyykö kuvasta OCR-tunnistuksen perusteella tekstiä. Jos löytyy, se palauttaa tämän tekstin. Jos ei, se palauttaa tyhjän merkkijonon 
+      return detections.length > 0 ? detections[0].description : '';
+     }));
+
+    console.log(texts);
+    koealueTekstina = texts.join(' ');
+    console.log('OCR Combined Text:', koealueTekstina);
+
+    context = [{ role: 'user', content: koealueTekstina }];
+
+     const response = await fetch('https://api.openai.com/v1/chat/completions', {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json',
+        'Authorization': `Bearer ${process.env.OPENAI_API_KEY}`
+      },
+      body: JSON.stringify({
+        model: 'gpt-4o-mini',
+        messages: context.concat([{ role: 'user', content: 'Luo yksi yksinkertainen ja selkeä kysymys ja sen vastaus yllä olevasta tekstistä suomeksi. Kysy vain yksi asia kerrallaan.' }]),
+        max_tokens: 150
+      })
+    });
+
+    if(response.status===200){
+      const data = await response.json();
+      console.log(data.choices[0].message);
+      
+      const responseText = data.choices[0].message.content.trim();
+      console.log('Response Text:', responseText);
+
+    }
+    else{
+      console.log('API response error:', response);
+    }
+
+
   }
+
+
+
+
   
 
 });
