@@ -104,18 +104,36 @@ app.post('/upload-images', upload.array('images', 10), async (req,res) =>{
       const responseText = data.choices[0].message.content.trim();
       console.log('Response Text:', responseText);
 
+      // Tarkistaa, onko Response textissä 'Vastaus:'. Jos on, se jakaa vastauksen kysymykseen ja vastaukseen. Jos ei, se asettaa kysymykseksi koko vastauksen ja jättää vastauksen tyhjäksi.
+      const [question, answer] = responseText.includes('Vastaus:') ? responseText.split('Vastaus:'): [responseText, null]; 
+
+      console.log('Parsed Question:', question);
+      console.log('Parsed Answer:', answer);
+
+      if (!question || !answer) {
+        return res.status(400).json({ error: 'Model could not generate a valid question. Please provide a clearer text.' });
+      }
+
+      let currentQuestion = ''; 
+      let correctAnswer = ''; 
+      currentQuestion = question.trim();
+      correctAnswer = answer.trim();
+
+      // lisää kysymys ja vastaus chatin context-taulukkoon
+      context.push({ role: 'assistant', content: `Kysymys: ${currentQuestion}` });
+      context.push({ role: 'assistant', content: `Vastaus: ${correctAnswer}` });
+
+      console.log(context);
+
+      res.json({question: currentQuestion, answer: correctAnswer});
+
+
     }
     else{
       console.log('API response error:', response);
     }
 
-
   }
-
-
-
-
-  
 
 });
 

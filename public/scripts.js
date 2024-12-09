@@ -14,7 +14,7 @@ async function sendChatMessage() {
     var userChatMessage = document.getElementById('chatbot-user-input').value;
     console.log(userChatMessage);
     document.getElementById('chatbot-user-input').value = '';
-    addMessageToChatbox("Minä: " + userChatMessage, "user-message"); 
+    addMessageToChatbox("Minä: " + userChatMessage, "user-message", "chatbox"); 
 
     
         const response = await fetch('/chat',{
@@ -30,21 +30,21 @@ async function sendChatMessage() {
         if(response.status === 200){
             const data = await response.json();
             console.log(data);
-            addMessageToChatbox("ChatGPT: " + data.answer, "bot-message");
+            addMessageToChatbox("ChatGPT: " + data.answer, "bot-message", "chatbox");
         }
         else{
-            addMessageToChatbox("Tapahtui virhe. Yritä myöhemmin uudelleen.", "bot-message");
+            addMessageToChatbox("Tapahtui virhe. Yritä myöhemmin uudelleen.", "bot-message", "chatbox");
         }
     
 }
 
-function addMessageToChatbox(message, className){
+function addMessageToChatbox(message, className, box){
     console.log('viesti lisätään chatboxiin');
     const messageElement = document.createElement('div');
     messageElement.classList.add('message', className);
     messageElement.innerText = message;
     console.log(messageElement);
-    document.getElementById('chatbox').appendChild(messageElement);
+    document.getElementById(box).appendChild(messageElement);
 
 
 }
@@ -77,7 +77,8 @@ async function sendImages(){
 
     if(response.status === 200){
         const data = await response.json();
-        console.log(data.message);
+        console.log(data.question);
+        addMessageToChatbox('OmaOpe: ' + data.question, 'bot-message', 'omaopebox');
     }
     else{
         const data = await response.json();
